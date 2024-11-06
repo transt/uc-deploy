@@ -1,0 +1,19 @@
+[files]
+extend-exclude = [
+    ".venv",
+    "venv",
+    "assets",
+    "schema/argo-workflows.json",
+    "python/understack-workflows/tests/json_samples/",
+]
+
+[default]
+extend-ignore-identifiers-re = [
+    "ironic_retrive_*",
+]
+
+[default.extend-words]
+# Don't correct "HPE"
+HPE = "HPE"
+fo = "fo"
+sme = "sme"

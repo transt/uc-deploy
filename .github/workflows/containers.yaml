@@ -1,0 +1,208 @@
+name: container builds
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "containers/**"
+      - ".github/workflows/containers.yaml"
+      - "python/**"
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - "containers/**"
+      - ".github/workflows/containers.yaml"
+      - "python/**"
+  workflow_dispatch:
+  merge_group:
+    types: [checks_requested]
+
+jobs:
+  openstack:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project: [ironic, neutron, keystone, openstack-client]
+        openstack: [2024.2]
+
+    steps:
+      - name: setup docker buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3
+      - name: login to ghcr.io
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: image metadata
+        id: meta
+        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.project }}
+          tags: |
+            type=raw,value=${{ matrix.openstack }}-ubuntu_jammy,enable={{is_default_branch}}
+            type=raw,value=${{ matrix.openstack }}-ubuntu_jammy,enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=ref,event=tag
+            type=ref,event=pr
+        env:
+          # Create the annotations at the index as well since this
+          # defaults to manifest only and we have to manually merge
+          # the container is multi-arch because of provenance creating
+          # an 'unknown/unknown' arch with data. We've got no annotations
+          # that are arch specific so populate them at the index as well.
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+
+      - name: build and deploy openstack container image to registry
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6
+        with:
+          file: containers/${{ matrix.project }}/Dockerfile.${{ matrix.project }}
+          build-args: OPENSTACK_VERSION=${{ matrix.openstack }}
+          pull: true  # ensure we always have an up to date source
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+
+  dnsmasq:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: setup docker buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3
+      - name: login to ghcr.io
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: image metadata
+        id: meta
+        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5
+        with:
+          images: ghcr.io/${{ github.repository }}/dnsmasq
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=ref,event=tag
+            type=ref,event=pr
+        env:
+          # Create the annotations at the index as well since this
+          # defaults to manifest only and we have to manually merge
+          # the container is multi-arch because of provenance creating
+          # an 'unknown/unknown' arch with data. We've got no annotations
+          # that are arch specific so populate them at the index as well.
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+
+      - name: build and deploy dnsmasq container to registry
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6
+        with:
+          context: "{{defaultContext}}:containers/dnsmasq"
+          file: Dockerfile.dnsmasq
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  workflows:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        container:
+          - name: ironic-nautobot-client
+
+    steps:
+      - name: setup docker buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3
+      - name: login to ghcr.io
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: image metadata
+        id: meta
+        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.container.name }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=ref,event=tag
+            type=ref,event=pr
+        env:
+          # Create the annotations at the index as well since this
+          # defaults to manifest only and we have to manually merge
+          # the container is multi-arch because of provenance creating
+          # an 'unknown/unknown' arch with data. We've got no annotations
+          # that are arch specific so populate them at the index as well.
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+
+      - name: build and deploy container image to registry
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6
+        with:
+          file: containers/${{ matrix.container.name }}/Dockerfile.${{ matrix.container.name }}
+          pull: true  # ensure we always have an up to date source
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          # prod is the target that has the code installed
+          target: prod
+
+  clean_containers:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+
+    strategy:
+      matrix:
+        container:
+          - ironic
+          - keystone
+          - neutron
+          - dnsmasq
+          - ironic-nautobot-client
+
+    steps:
+      - name: clean up PR container
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        env:
+          CONTAINER_NAME: '${{ matrix.container }}'
+        with:
+          script: |
+            const container_name = `${context.repo.repo}/${process.env.CONTAINER_NAME}`;
+            const response = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+              package_type: "container",
+              package_name: container_name,
+              org: context.repo.owner,
+            });
+
+            const target_tag = `pr-${context.payload.pull_request.number}`;
+            console.log(`Looking for tag ${target_tag} for container ${container_name}`);
+
+            const versions = response.data || [];
+            const matchingVersion = versions.find(version =>
+              version.metadata.container.tags.includes(target_tag)
+            );
+
+            if (matchingVersion) {
+              console.log(`Found tag to delete "${target_tag}":`, matchingVersion.html_url);
+              await github.rest.packages.deletePackageVersionForOrg({
+                package_type: "container",
+                package_name: container_name,
+                org: context.repo.owner,
+                package_version_id: matchingVersion.id,
+              });
+              console.log("Tag deleted");
+            } else {
+              console.log(`No package version found with the tag "${target_tag}".`);
+            }

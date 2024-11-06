@@ -1,0 +1,25 @@
+# This is the root URL of the OIDC provider (required).
+issuer: http://dex.dex.svc:5556
+# This defines how long your login is valid for (in hours). (optional)
+# If omitted, defaults to 10h. Example below is 10 days.
+sessionExpiry: 240h
+# This is name of the secret and the key in it that contain OIDC client
+# ID issued to the application by the provider (required).
+clientId:
+  name: argo-sso
+  key: client-id
+# This is name of the secret and the key in it that contain OIDC client
+# secret issued to the application by the provider (required).
+clientSecret:
+  name: argo-sso
+  key: client-secret
+# Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
+scopes:
+  - groups
+  - email
+  - profile
+# RBAC Config. >= v2.12
+rbac:
+  enabled: false
+# Skip TLS verify, not recommended in production environments. Useful for testing purposes. >= v3.2.4
+insecureSkipVerify: true

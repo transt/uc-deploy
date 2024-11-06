@@ -1,0 +1,19 @@
+# add your values.yaml overrides for the helm chart here
+
+config:
+  staticClients:
+    - id: nautobot
+      secretEnv: NAUTOBOT_SSO_CLIENT_SECRET
+      name: "Undercloud Nautobot"
+      redirectURIs:
+        - "https://nautobot.${DNS_ZONE}/complete/oidc/"
+    - id: argo
+      secretEnv: ARGO_SSO_CLIENT_SECRET
+      name: "Undercloud Argo"
+      redirectURIs:
+        - "https://workflows.${DNS_ZONE}/oauth2/callback"
+    - id: argocd
+      secretEnv: ARGOCD_SSO_CLIENT_SECRET
+      name: "Undercloud ArgoCD"
+      redirectURIs:
+        - "https://argocd.${DNS_ZONE}/auth/callback"

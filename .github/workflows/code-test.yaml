@@ -1,0 +1,54 @@
+name: code tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "python/**"
+      - ".github/workflows/code-test.yaml"
+  pull_request:
+    paths:
+      - "python/**"
+      - ".github/workflows/code-test.yaml"
+  workflow_dispatch:
+  merge_group:
+    types: [checks_requested]
+
+# limit rapid succession from pushes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  python:
+    permissions:
+      contents: read
+      pull-requests: write
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project:
+          - understack-workflows
+          - ironic-understack
+          - neutron-understack
+
+    defaults:
+      run:
+        working-directory: ./python/${{ matrix.project }}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - run: pipx install poetry==1.7.1 && poetry self add 'poetry-dynamic-versioning[plugin]'
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5
+        with:
+          python-version-file: python/${{ matrix.project }}/pyproject.toml
+          cache: "poetry"
+      - run: poetry install --sync --with test
+      - run: poetry build
+      - run: "poetry run pytest --cov --cov-report xml:coverage.xml"
+      - uses: orgoro/coverage@3f13a558c5af7376496aa4848bf0224aead366ac # v3.2
+        with:
+          coverageFile: python/${{ matrix.project }}/coverage.xml
+          token: ${{ secrets.GITHUB_TOKEN }}

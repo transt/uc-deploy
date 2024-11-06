@@ -1,0 +1,13 @@
+# syntax=docker/dockerfile:1
+
+ARG OPENSTACK_VERSION="required_argument"
+FROM docker.io/openstackhelm/ironic:${OPENSTACK_VERSION}-ubuntu_jammy
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        genisoimage \
+        isolinux \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY python/ironic-understack /tmp/ironic-understack
+RUN /var/lib/openstack/bin/python -m pip install --no-cache --no-cache-dir /tmp/ironic-understack sushy-oem-idrac==6.0.0

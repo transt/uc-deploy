@@ -1,0 +1,29 @@
+dex:
+  # disable shipping ArgoCD's dex, we'll use the Undercloud provided one
+  enabled: false
+notifications:
+  # disable notifying users or GitHub
+  enabled: false
+applicationSet:
+  # enable the ApplicationSet controller to auto-generate Applications
+  enabled: true
+server:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    extraTls:
+      - hosts:
+        - argocd.example.com
+        secretName: argocd-ingress-tls
+configs:
+  params:
+    server.insecure: true
+  cm:
+    kustomize.buildOptions: --enable-helm
+  rbac:
+    policy.csv: |
+      g, ucadmin, role:admin
+    policy.default: role:readonly

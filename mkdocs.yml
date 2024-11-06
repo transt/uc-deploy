@@ -1,0 +1,131 @@
+---
+site_name: Understack
+site_description: |-
+  Understack is a collection of open-source tools and technologies that provides
+  flexible, scalable, and cost-effective infrastructure management solution. The
+  focus is on deploying bare metal in data centers with functional DCIM and IPAM.
+
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.png
+
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: rackspace-light
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: rackspace-dark
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tooltips
+    - navigation.expand
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+
+repo_name: rackerlabs/understack
+repo_url: https://github.com/rackerlabs/understack
+dev_addr: "127.0.0.1:8001"
+edit_uri: "edit/main/docs"
+
+copyright: Copyright &copy; 2024 Rackspace Technology, Inc.
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - pymdownx.caret
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: python
+          class: python
+          validator: !!python/name:markdown_exec.validator
+          format: !!python/name:markdown_exec.formatter
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.mark
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_css:
+  - stylesheets/rackspace-theme.css
+
+plugins:
+  - search
+  - include_dir_to_nav:
+      sort_file: true
+      sort_directory: true
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+nav:
+  - Home: index.md
+  - Overview:
+    - vision.md
+    - 'Prerequisites':
+      - kubernetes.md
+      - openstack-helm.md
+    - 'Configuration':
+      - secrets.md
+      - networking.md
+    - Components:
+      - component-overview.md
+      - component-argo-workflows.md
+      - component-understack-workflows.md
+  - 'Deployment Guide':
+    - deploy-guide/index.md
+    - Quick Start: deploy-guide/gitops-install.md
+    - deploy-guide/install-understack-ubuntu-k3s.md
+    - deploy-guide/auth.md
+    - deploy-guide/extra-regions.md
+    - deploy-guide/external-argocd.md
+    - deploy-guide/add-remove-app.md
+  - 'User Guide':
+    - user-guide/index.md
+    - user-guide/openstack-cli.md
+    - user-guide/openstack-image.md
+    - user-guide/rabbitmq-cheat-sheet.md
+    - user-guide/mariadb-operator-cheat-sheet.md
+    - user-guide/postgres-operator-cheat-sheet.md
+    - user-guide/monitoring.md
+    - user-guide/openstack-ironic.md
+    - user-guide/openstack-placement.md
+  - Workflows: workflows/

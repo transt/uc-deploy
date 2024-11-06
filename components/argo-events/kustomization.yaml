@@ -1,0 +1,22 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - https://github.com/argoproj/argo-events/releases/download/v1.9.1/install.yaml
+  - https://github.com/argoproj/argo-events/releases/download/v1.9.1/install-validating-webhook.yaml
+
+  ## configure rbac to integrate with argo-workflow
+  # - default-role.yaml
+  - argo-server-role.yaml
+  - argo-role.yaml
+
+  ## configure webhook Sensor and associated role
+  - sensor-workflow-role.yaml
+  - workflow-role.yaml
+
+  - configmaps.yaml
+
+  ## allow neutron's service account to submit workflows
+  - svc-neutron.yaml

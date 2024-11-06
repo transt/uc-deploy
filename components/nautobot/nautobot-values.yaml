@@ -1,0 +1,70 @@
+---
+
+nautobot:
+
+  db:
+    engine: "django.db.backends.postgresql"
+
+    # Using CloudNative postgres operator:
+    host: "nautobot-cluster-rw.nautobot.svc"
+    name: "app"
+    user: "app"
+    existingSecret: "nautobot-cluster-app"
+    existingSecretPasswordKey: "password"
+
+  django:
+    existingSecret: nautobot-django
+
+  # used by Argo Workflows to update data
+  superUser:
+    enabled: true
+    existingSecret: nautobot-superuser
+    existingSecretPasswordKey: password
+    existingSecretApiTokenKey: apitoken
+
+  extraVolumes:
+    - name: nautobot-dexauth
+      configMap:
+        name: dexauth
+        defaultMode: 420
+    - name: nautobot-sso
+      secret:
+        secretName: nautobot-sso
+        defaultMode: 420
+        optional: false
+
+  extraVolumeMounts:
+    - name: nautobot-dexauth
+      mountPath: /opt/nautobot/dexauth.py
+      readOnly: true
+      subPath: dexauth.py
+    - name: nautobot-sso
+      mountPath: /opt/nautobot/sso/
+      readOnly: true
+
+  extraEnvVarsSecret:
+    - nautobot-custom-env
+
+celery:
+  replicaCount: 1
+  extraEnvVarsSecret:
+    - nautobot-django
+    - nautobot-custom-env
+
+postgresql:
+  enabled: false
+
+redis:
+  enabled: true
+  auth:
+    existingSecret: nautobot-redis
+    existingSecretPasswordKey: NAUTOBOT_REDIS_PASSWORD
+
+ingress:
+  enabled: true
+  ingressClassName: "nginx"
+  tls: true
+  secretName: "nautobot-ingress-tls"
+  annotations:
+    cert-manager.io/cluster-issuer: understack-cluster-issuer
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS

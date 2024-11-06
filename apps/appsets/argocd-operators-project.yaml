@@ -1,0 +1,30 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: operators
+spec:
+  sourceRepos:
+  - '*'
+  destinations:
+  # make sure our operators don't install in the wrong place
+  - namespace: 'rabbitmq-system'
+    server: '*'
+  - namespace: 'mariadb-operator'
+    server: '*'
+  - namespace: 'postgres-operator'
+    server: '*'
+  - namespace: 'external-secrets'
+    server: '*'
+  - namespace: 'cnpg-system'
+    server: '*'
+  - namespace: 'rook-ceph'
+    server: '*'
+  - namespace: 'monitoring'
+    server: '*'
+  # kube-system is used by kube-prometheus-stack
+  - namespace: 'kube-system'
+    server: '*'
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'

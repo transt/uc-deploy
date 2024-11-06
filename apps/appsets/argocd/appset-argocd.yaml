@@ -1,0 +1,70 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: argocd
+spec:
+  syncPolicy:
+    applicationsSync: create-update
+    preserveResourcesOnDeletion: true
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            argocd.argoproj.io/secret-type: cluster
+            understack.rackspace.com/argocd: enabled
+  template:
+    metadata:
+      name: '{{.name}}-argocd'
+    spec:
+      project: default
+      sources:
+        - repoURL: '{{index .metadata.annotations "uc_repo_git_url"}}'
+          targetRevision: '{{index .metadata.annotations "uc_repo_ref"}}'
+          path: bootstrap/argocd/
+          kustomize:
+            components:
+              - components/sso
+            patches:
+              - target:
+                  kind: ConfigMap
+                  name: argocd-cm
+                patch: |-
+                  - op: replace
+                    path: /data/url
+                    value: https://argocd.{{index .metadata.annotations "dns_zone"}}
+              - target:
+                  kind: Ingress
+                patch: |-
+                  - op: replace
+                    path: /spec/rules/0/host
+                    value: argocd.{{index .metadata.annotations "dns_zone"}}
+                  - op: replace
+                    path: /spec/tls/0/hosts/0
+                    value: argocd.{{index .metadata.annotations "dns_zone"}}
+                  - op: replace
+                    path: '/metadata/annotations/cert-manager.io~1cluster-issuer'
+                    value: understack-cluster-issuer
+        - repoURL: '{{index .metadata.annotations "uc_deploy_git_url"}}'
+          targetRevision: '{{index .metadata.annotations "uc_deploy_ref"}}'
+          path: '{{.name}}/manifests/argocd'
+      ignoreDifferences:
+        - kind: Secret
+          namespace: argocd
+          jqPathExpressions:
+            - .metadata.annotations.uc_repo_ref
+            - .metadata.annotations.uc_deploy_ref
+      destination:
+        server: '{{.server}}'
+        namespace: argocd
+      syncPolicy:
+        automated:
+          prune: false
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - RespectIgnoreDifferences=true
+        managedNamespaceMetadata:
+          annotations:
+            argocd.argoproj.io/sync-options: Delete=false

@@ -1,0 +1,29 @@
+# where helm charts will get downloaded by kustomize
+/charts/
+
+# un-encrypted secrets
+/secret-*.yaml
+# sealed secrets
+components/01-secrets/encrypted-*.yaml
+components/01-secrets/kustomization.yaml
+
+# python virtualenv
+.venv/
+venv/
+.python-version
+
+# python packaging
+*.egg-info
+/python/*/build/
+/python/*/dist/
+__pycache__
+.coverage
+.idea
+
+# auto-generated argo-workflows docs
+# see .github/workflows/mkdocs.yaaml
+docs/workflows/
+
+# devbox's envrc
+.envrc
+.direnv

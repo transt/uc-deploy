@@ -1,0 +1,55 @@
+name: Validate Manifests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  merge_group:
+    types: [checks_requested]
+
+jobs:
+  lint-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - run: pip install yamllint
+      - run: yamllint -c .yamllint.yaml --format github .
+
+  kustomize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: azure/setup-kubectl@3e0aec4d80787158d308d7b364cb1b702e7feb7f # v4
+      - uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4.2.0
+      - uses: bmuschko/setup-kubeconform@5ccaecbbf012bcb1eeeab66e649db64a477ade8f # v1
+      - name: validate kustomize with kubeconform
+        run: |
+          set -o errexit
+          set -o pipefail
+          items=$(find bootstrap -maxdepth 2 -name kustomization.yaml -exec dirname {} \;)
+          items+=($(find operators -maxdepth 2 -name kustomization.yaml -exec dirname {} \;))
+          items+=($(find components -maxdepth 2 -name kustomization.yaml -exec dirname {} \;))
+          items+=($(find apps -maxdepth 2 -name kustomization.yaml -exec dirname {} \;))
+
+          for item in ${items}; do
+            echo "${item}"
+            kubectl kustomize --enable-helm "${item}" | \
+              kubeconform -skip=Secret -strict -ignore-missing-schemas
+          done
+
+  workflows-description:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: thiagodnf/yaml-schema-checker@3c4a632d4124b6c00e38b492b2eb35dea715e1ae # v0.0.12
+        with:
+          jsonSchemaFile: workflows/.workflow_with_description.schema.json
+          yamlFiles: |
+            workflows/argo-events/sensors/*.y*ml
+            workflows/argo-events/workflowtemplates/*.y*ml
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: reviewdog/action-shellcheck@ccaafec556ffa154f112bfcb7b9c9574190b7091 # v1
